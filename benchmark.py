@@ -117,7 +117,7 @@ def main():
     indices = list(range(dataset.size()))
     #random.shuffle(indices)  # we don't want to shuffle
     if args.num_examples is not None:
-        indices = indices[args.index_start:args.num_examples]
+        indices = indices[args.index_start:args.index_start+args.num_examples]
 
     num_workers = args.num_workers
 
