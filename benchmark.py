@@ -13,6 +13,13 @@ from engine import *
 
 WorkerResult = namedtuple('WorkerResult', ['num_errors', 'num_words', 'rtf'])
 
+filename_ref = 'transcripts_ref.txt'
+filename = 'transcripts.txt'
+
+if os.path.exists(filename):
+    os.remove(filename)
+if os.path.exists(filename_ref):
+    os.remove(filename_ref)
 
 def process(
         engine: Engines,
@@ -25,10 +32,17 @@ def process(
 
     error_count = 0
     word_count = 0
+
+    f_out_ref = open(filename_ref, 'a')
+    f_out = open(filename, 'a')
+    
     for index in indices:
         audio_path, ref_transcript = dataset.get(index)
 
         transcript = engine.transcribe(audio_path)
+
+        print(ref_transcript.strip('\n '), file=f_out_ref)
+        print(transcript.strip('\n '), file=f_out)
 
         ref_words = ref_transcript.strip('\n ').lower().split()
         words = transcript.strip('\n ').lower().split()
@@ -37,6 +51,8 @@ def process(
         word_count += len(ref_words)
 
     engine.delete()
+    f_out_ref.close()
+    f_out.close()
 
     return WorkerResult(num_errors=error_count, num_words=word_count, rtf=engine.rtf())
 
@@ -55,6 +71,7 @@ def main():
     parser.add_argument('--picovoice-access-key')
     parser.add_argument('--watson-speech-to-text-api-key')
     parser.add_argument('--watson-speech-to-text-url')
+    parser.add_argument('--index-start', type=int, default=0)
     parser.add_argument('--num-examples', type=int, default=None)
     parser.add_argument('--num-workers', type=int, default=os.cpu_count())
     args = parser.parse_args()
@@ -98,9 +115,9 @@ def main():
         kwargs['watson_speech_to_text_url'] = args.watson_speech_to_text_url
 
     indices = list(range(dataset.size()))
-    random.shuffle(indices)
+    #random.shuffle(indices)  # we don't want to shuffle
     if args.num_examples is not None:
-        indices = indices[:args.num_examples]
+        indices = indices[args.index_start:args.num_examples]
 
     num_workers = args.num_workers
 
@@ -109,6 +126,7 @@ def main():
     futures = list()
     with ProcessPoolExecutor(num_workers) as executor:
         for i in range(num_workers):
+            # TODO: insert punctuations and capitalize.
             future = executor.submit(
                 process,
                 engine=args.engine,
