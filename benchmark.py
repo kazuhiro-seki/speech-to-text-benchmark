@@ -13,28 +13,22 @@ from engine import *
 
 WorkerResult = namedtuple('WorkerResult', ['num_errors', 'num_words', 'rtf'])
 
-filename_ref = 'transcripts_ref.txt'
-filename = 'transcripts.txt'
-
-if os.path.exists(filename):
-    os.remove(filename)
-if os.path.exists(filename_ref):
-    os.remove(filename_ref)
-
 def process(
         engine: Engines,
         engine_params: Dict[str, Any],
         dataset: Datasets,
         dataset_folder: str,
-        indices: Sequence[int]) -> WorkerResult:
+        indices: Sequence[int],
+        filename: str,
+        filename_ref: str) -> WorkerResult:
     engine = Engine.create(engine, **engine_params)
     dataset = Dataset.create(dataset, folder=dataset_folder)
 
     error_count = 0
     word_count = 0
 
-    f_out_ref = open(filename_ref, 'a')
     f_out = open(filename, 'a')
+    f_out_ref = open(filename_ref, 'a')
     
     for index in indices:
         audio_path, ref_transcript = dataset.get(index)
@@ -51,8 +45,8 @@ def process(
         word_count += len(ref_words)
 
     engine.delete()
-    f_out_ref.close()
     f_out.close()
+    f_out_ref.close()
 
     return WorkerResult(num_errors=error_count, num_words=word_count, rtf=engine.rtf())
 
@@ -75,6 +69,13 @@ def main():
     parser.add_argument('--num-examples', type=int, default=None)
     parser.add_argument('--num-workers', type=int, default=os.cpu_count())
     args = parser.parse_args()
+
+    filename = f'transcripts{args.index_start}.txt'
+    filename_ref = f'transcripts_ref{args.index_start}.txt'
+    if os.path.exists(filename):
+        os.remove(filename)
+    if os.path.exists(filename_ref):
+        os.remove(filename_ref)
 
     args.dataset = Datasets[args.dataset]
     args.engine = Engines[args.engine]
@@ -133,7 +134,9 @@ def main():
                 engine_params=kwargs,
                 dataset=args.dataset,
                 dataset_folder=args.dataset_folder,
-                indices=indices[i * chunk: (i + 1) * chunk]
+                indices=indices[i * chunk: (i + 1) * chunk],
+                filename=filename,
+                filename_ref=filename_ref
             )
             futures.append(future)
 
