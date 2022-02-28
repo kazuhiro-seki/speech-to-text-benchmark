@@ -308,7 +308,8 @@ class MozillaDeepSpeechEngine(Engine):
         return res
 
     def rtf(self) -> float:
-        return self._proc_sec / self._audio_sec
+        return -1
+        #return self._proc_sec / self._audio_sec
 
     def delete(self) -> None:
         pass
