@@ -27,9 +27,9 @@ class Dataset(object):
         raise NotImplementedError()
 
     @classmethod
-    def create(cls, x: Datasets, folder: str):
+    def create(cls, x: Datasets, folder: str, start: int, end: int):
         if x == Datasets.COMMON_VOICE:
-            return CommonVoiceDataset(folder)
+            return CommonVoiceDataset(folder, start, end)
         elif x == Datasets.LIBRI_SPEECH_TEST_CLEAN:
             return LibriSpeechTestCleanDataset(folder)
         elif x == Datasets.LIBRI_SPEECH_TEST_OTHER:
@@ -67,11 +67,13 @@ class Dataset(object):
 
 
 class CommonVoiceDataset(Dataset):
-    def __init__(self, folder: str):
+    def __init__(self, folder: str, start: int, end: int):
         self._data = list()
         #with open(os.path.join(folder, 'test.tsv')) as f:
         with open(os.path.join(folder, 'train.tsv')) as f:
-            for row in csv.DictReader(f, delimiter='\t'):
+            for i, row in enumerate(csv.DictReader(f, delimiter='\t')):
+                if i < start or i >= end:
+                    continue
                 if int(row['up_votes']) > 0 and int(row['down_votes']) == 0:
                     mp3_path = os.path.join(folder, 'clips', row['path'])
                     flac_path = mp3_path.replace('.mp3', '.flac')
@@ -89,6 +91,7 @@ class CommonVoiceDataset(Dataset):
                         continue
 
                     try:
+                        print(flac_path)
                         self._data.append((flac_path, self._normalize(row['sentence'])))
                     except RuntimeError:
                         continue
