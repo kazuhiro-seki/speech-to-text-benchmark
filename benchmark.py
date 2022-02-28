@@ -35,8 +35,8 @@ def process(
 
         transcript = engine.transcribe(audio_path)
 
-        print(ref_transcript.strip('\n '), file=f_out_ref)
-        print(transcript.strip('\n '), file=f_out)
+        print(str(index)+'\t'+ref_transcript.strip('\n '), file=f_out_ref)
+        print(str(index)+'\t'+transcript.strip('\n '), file=f_out)
 
         ref_words = ref_transcript.strip('\n ').lower().split()
         words = transcript.strip('\n ').lower().split()
