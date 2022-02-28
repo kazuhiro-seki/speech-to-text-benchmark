@@ -20,9 +20,14 @@ def process(
         dataset_folder: str,
         indices: Sequence[int],
         filename: str,
-        filename_ref: str) -> WorkerResult:
+        filename_ref: str,
+        start: int,
+        end: int) -> WorkerResult:
     engine = Engine.create(engine, **engine_params)
-    dataset = Dataset.create(dataset, folder=dataset_folder)
+    dataset = Dataset.create(dataset, 
+                             folder=dataset_folder,
+                             start=start,
+                             end=end)
 
     error_count = 0
     word_count = 0
@@ -71,7 +76,7 @@ def main():
     args = parser.parse_args()
 
     filename = f'transcripts{args.index_start}.txt'
-    filename_ref = f'transcripts_ref{args.index_start}.txt'
+    filename_ref = f'transcripts{args.index_start}_ref.txt'
     if os.path.exists(filename):
         os.remove(filename)
     if os.path.exists(filename_ref):
@@ -80,7 +85,10 @@ def main():
     args.dataset = Datasets[args.dataset]
     args.engine = Engines[args.engine]
 
-    dataset = Dataset.create(args.dataset, folder=args.dataset_folder)
+    dataset = Dataset.create(args.dataset, 
+                             folder=args.dataset_folder, 
+                             start=args.index_start,
+                             end=args.index_start+args.num_examples)
 
     kwargs = dict()
     if args.engine is Engines.AMAZON_TRANSCRIBE:
@@ -116,9 +124,13 @@ def main():
         kwargs['watson_speech_to_text_url'] = args.watson_speech_to_text_url
 
     indices = list(range(dataset.size()))
-    #random.shuffle(indices)  # we don't want to shuffle
-    if args.num_examples is not None:
-        indices = indices[args.index_start:args.index_start+args.num_examples]
+
+    # we don't want to shuffle
+    #random.shuffle(indices)  
+    
+    # already decreased the data and may be smaller then args.num_examples
+    #if args.num_examples is not None:
+    #    indices = indices[args.index_start:args.index_start+args.num_examples]
 
     num_workers = args.num_workers
 
@@ -136,7 +148,9 @@ def main():
                 dataset_folder=args.dataset_folder,
                 indices=indices[i * chunk: (i + 1) * chunk],
                 filename=filename,
-                filename_ref=filename_ref
+                filename_ref=filename_ref,
+                start=args.index_start,
+                end=args.index_start+args.num_examples
             )
             futures.append(future)
 
