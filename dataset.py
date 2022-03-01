@@ -70,9 +70,9 @@ class CommonVoiceDataset(Dataset):
     def __init__(self, folder: str, start: int, end: int):
         self._data = list()
         #with open(os.path.join(folder, 'test.tsv')) as f:
-        with open(os.path.join(folder, 'train.tsv')) as f:
+        with open(os.path.join(folder, 'validated.tsv')) as f:
             for i, row in enumerate(csv.DictReader(f, delimiter='\t')):
-                if i < start or i >= end:
+                if i < start or (end != -1 and i >= end):
                     continue
                 if int(row['up_votes']) > 0 and int(row['down_votes']) == 0:
                     mp3_path = os.path.join(folder, 'clips', row['path'])

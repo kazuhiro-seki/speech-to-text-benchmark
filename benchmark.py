@@ -85,10 +85,16 @@ def main():
     args.dataset = Datasets[args.dataset]
     args.engine = Engines[args.engine]
 
-    dataset = Dataset.create(args.dataset, 
-                             folder=args.dataset_folder, 
-                             start=args.index_start,
-                             end=args.index_start+args.num_examples)
+    if args.num_examples:
+        dataset = Dataset.create(args.dataset, 
+                                 folder=args.dataset_folder, 
+                                 start=args.index_start,
+                                 end=args.index_start+args.num_examples)
+    else:
+        dataset = Dataset.create(args.dataset, 
+                                 folder=args.dataset_folder, 
+                                 start=args.index_start,
+                                 end=-1)
 
     kwargs = dict()
     if args.engine is Engines.AMAZON_TRANSCRIBE:
@@ -139,6 +145,12 @@ def main():
     futures = list()
     with ProcessPoolExecutor(num_workers) as executor:
         for i in range(num_workers):
+
+            if args.num_examples:
+                end = args.index_start+args.num_examples
+            else:
+                end = -1
+
             # TODO: insert punctuations and capitalize.
             future = executor.submit(
                 process,
@@ -150,7 +162,7 @@ def main():
                 filename=filename,
                 filename_ref=filename_ref,
                 start=args.index_start,
-                end=args.index_start+args.num_examples
+                end=end
             )
             futures.append(future)
 
