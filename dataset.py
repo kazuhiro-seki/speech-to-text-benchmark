@@ -1,5 +1,6 @@
 import csv
 import os
+import glob
 import string
 import subprocess
 from enum import Enum
@@ -69,8 +70,24 @@ class Dataset(object):
 class CommonVoiceDataset(Dataset):
     def __init__(self, folder: str, start: int, end: int):
         self._data = list()
-        #with open(os.path.join(folder, 'test.tsv')) as f:
-        with open(os.path.join(folder, 'validated.tsv')) as f:
+
+        header = 'client_id	path	sentence	up_votes	down_votes	age	gender	accents	locale	segment'
+        
+        file_all = os.path.join(folder, 'all.tsv')
+        if not os.path.exists(file_all):
+            lines = set()
+            for tsv in ['test', 'train', 'validated', 'dev', 'other']:
+                with open(os.path.join(folder, tsv+'.tsv')) as f:
+                    for line in f:
+                        lines.add(line.rstrip())
+            lines.remove(header)
+            lines = sorted(lines)
+            with open(file_all, 'w') as f:
+                print(header, file=f)
+                for line in lines:
+                    print(line, file=f)
+
+        with open(file_all) as f:
             for i, row in enumerate(csv.DictReader(f, delimiter='\t')):
                 if i < start or (end != -1 and i >= end):
                     continue
