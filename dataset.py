@@ -113,6 +113,8 @@ class CommonVoiceDataset(Dataset):
                     except RuntimeError:
                         continue
 
+        print("Loaded {} files".format(len(self._data)))
+
     def size(self) -> int:
         return len(self._data)
 

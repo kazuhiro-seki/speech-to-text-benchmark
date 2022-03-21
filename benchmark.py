@@ -75,6 +75,8 @@ def main():
     parser.add_argument('--num-workers', type=int, default=os.cpu_count())
     args = parser.parse_args()
 
+    print(args, flush=True)
+
     filename = f'transcripts{args.index_start}.txt'
     filename_ref = f'transcripts{args.index_start}_ref.txt'
     if os.path.exists(filename):
