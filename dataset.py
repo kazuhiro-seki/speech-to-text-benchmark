@@ -1,5 +1,5 @@
 import csv
-import os
+import os,sys
 import glob
 import string
 import subprocess
@@ -11,6 +11,7 @@ import soundfile
 
 
 class Datasets(Enum):
+    CUSTOM = 'CUSTOM'
     COMMON_VOICE = 'COMMON_VOICE'
     LIBRI_SPEECH_TEST_CLEAN = 'LIBRI_SPEECH_TEST_CLEAN'
     LIBRI_SPEECH_TEST_OTHER = 'LIBRI_SPEECH_TEST_OTHER'
@@ -31,6 +32,8 @@ class Dataset(object):
     def create(cls, x: Datasets, folder: str, start: int, end: int):
         if x == Datasets.COMMON_VOICE:
             return CommonVoiceDataset(folder, start, end)
+        elif x == Datasets.CUSTOM:
+            return CustomDataset(folder, start, end)
         elif x == Datasets.LIBRI_SPEECH_TEST_CLEAN:
             return LibriSpeechTestCleanDataset(folder)
         elif x == Datasets.LIBRI_SPEECH_TEST_OTHER:
@@ -65,6 +68,50 @@ class Dataset(object):
             raise RuntimeError()
 
         return text
+
+
+class CustomDataset(Dataset):
+    def __init__(self, folder: str, start: int, end: int):
+        self._data = list()
+
+        file_all = os.path.join(folder, 'all.tsv')
+        with open(file_all) as f:
+            for i, row in enumerate(csv.DictReader(f, delimiter='\t')):
+                if i < start:
+                    continue
+                if end != -1 and i >= end:
+                    break
+                
+                if int(row['up_votes']) > 0 and int(row['down_votes']) == 0:
+
+                    flac_path = os.path.join(folder, row['path']).replace('.mp3', '.flac')
+                    try:
+                        if soundfile.read(flac_path)[0].size > 16000 * 60:
+                            continue
+                    except ValueError:
+                        print(f'Value error in reading: {flac_path}', file=sys.stderr)
+                        continue
+
+                    except RuntimeError:
+                        print(f'Runtime error in reading: {flac_path}', file=sys.stderr)
+                        continue
+
+                    try:
+                        print(flac_path)
+                        self._data.append((flac_path, self._normalize(row['sentence'])))
+                    except RuntimeError:
+                        continue
+
+        print("Loaded {} files".format(len(self._data)))
+
+    def size(self) -> int:
+        return len(self._data)
+
+    def get(self, index: int) -> Tuple[str, str]:
+        return self._data[index]
+
+    def __str__(self) -> str:
+        return 'Custom'
 
 
 class CommonVoiceDataset(Dataset):
