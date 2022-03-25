@@ -20,7 +20,6 @@ def process(
         dataset_folder: str,
         indices: Sequence[int],
         filename: str,
-        filename_ref: str,
         start: int,
         end: int) -> WorkerResult:
     engine = Engine.create(engine, **engine_params)
@@ -33,25 +32,24 @@ def process(
     word_count = 0
 
     f_out = open(filename, 'a')
-    f_out_ref = open(filename_ref, 'a')
     
     for index in indices:
         audio_path, ref_transcript = dataset.get(index)
 
         transcript = engine.transcribe(audio_path)
-
-        print(str(index)+'\t'+ref_transcript.strip('\n '), file=f_out_ref)
-        print(str(index)+'\t'+transcript.strip('\n '), file=f_out)
-
         ref_words = ref_transcript.strip('\n ').lower().split()
         words = transcript.strip('\n ').lower().split()
 
-        error_count += editdistance.eval(ref_words, words)
+        ed = editdistance.eval(ref_words, words)
+        error_count += ed
         word_count += len(ref_words)
+
+        print('{}\t{}\t{:.3f}'.format(ref_transcript.strip('\n '),
+                                      transcript.strip('\n '),
+                                      ed/len(ref_words)), file=f_out)
 
     engine.delete()
     f_out.close()
-    f_out_ref.close()
 
     return WorkerResult(num_errors=error_count, num_words=word_count, rtf=engine.rtf())
 
@@ -78,11 +76,8 @@ def main():
     print(args, flush=True)
 
     filename = f'transcripts{args.index_start}.txt'
-    filename_ref = f'transcripts{args.index_start}_ref.txt'
     if os.path.exists(filename):
         os.remove(filename)
-    if os.path.exists(filename_ref):
-        os.remove(filename_ref)
 
     args.dataset = Datasets[args.dataset]
     args.engine = Engines[args.engine]
@@ -162,7 +157,6 @@ def main():
                 dataset_folder=args.dataset_folder,
                 indices=indices[i * chunk: (i + 1) * chunk],
                 filename=filename,
-                filename_ref=filename_ref,
                 start=args.index_start,
                 end=end
             )
