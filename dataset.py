@@ -97,10 +97,12 @@ class CustomDataset(Dataset):
                         continue
 
                     try:
-                        print(flac_path)
-                        self._data.append((flac_path, self._normalize(row['sentence'])))
+                        normalized_sentence = self._normalize(row['sentence'])
                     except RuntimeError:
                         continue
+
+                    print(flac_path)
+                    self._data.append((flac_path, normalized_sentence))
 
         print("Loaded {} files".format(len(self._data)))
 
