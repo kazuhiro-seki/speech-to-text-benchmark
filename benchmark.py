@@ -16,17 +16,13 @@ WorkerResult = namedtuple('WorkerResult', ['num_errors', 'num_words', 'rtf'])
 def process(
         engine: Engines,
         engine_params: Dict[str, Any],
-        dataset: Datasets,
+        dataset: Dataset,
         dataset_folder: str,
         indices: Sequence[int],
         filename: str,
         start: int,
         end: int) -> WorkerResult:
     engine = Engine.create(engine, **engine_params)
-    dataset = Dataset.create(dataset, 
-                             folder=dataset_folder,
-                             start=start,
-                             end=end)
 
     error_count = 0
     word_count = 0
@@ -153,7 +149,7 @@ def main():
                 process,
                 engine=args.engine,
                 engine_params=kwargs,
-                dataset=args.dataset,
+                dataset=dataset,
                 dataset_folder=args.dataset_folder,
                 indices=indices[i * chunk: (i + 1) * chunk],
                 filename=filename,
